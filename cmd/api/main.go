@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/adnlv/lowbud/internal/config"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func mustReadConfig() *config.Config {
@@ -35,6 +36,20 @@ func mustInitLogger() {
 		Level:     slog.LevelDebug,
 	}))
 	slog.SetDefault(logger)
+}
+
+func mustConnectToPostgres(cfg *config.Config) *pgxpool.Pool {
+	dbpool, err := pgxpool.New(context.Background(), cfg.Postgres.URL)
+	if err != nil {
+		slog.Error("Failed to connect to postgres: %s", err)
+		os.Exit(1)
+	}
+	if err = dbpool.Ping(context.Background()); err != nil {
+		slog.Error("Failed to ping postgres: %s", err)
+		os.Exit(1)
+	}
+	slog.Info("Connected to postgres")
+	return dbpool
 }
 
 func mustListenAndServe(cfg *config.Config) {
@@ -72,5 +87,9 @@ func mustListenAndServe(cfg *config.Config) {
 func main() {
 	cfg := mustReadConfig()
 	mustInitLogger()
+
+	dbpool := mustConnectToPostgres(cfg)
+	defer dbpool.Close()
+
 	mustListenAndServe(cfg)
 }

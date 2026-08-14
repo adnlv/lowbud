@@ -16,5 +16,5 @@ type ServerConfig struct {
 }
 
 type PostgresConfig struct {
-	DSN string `env:"POSTGRES_DSN" env-required:"true"`
+	URL string `env:"POSTGRES_URL" env-required:"true"`
 }
