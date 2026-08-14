@@ -3,7 +3,8 @@ package config
 import "time"
 
 type Config struct {
-	Server ServerConfig
+	Server   ServerConfig
+	Postgres PostgresConfig
 }
 
 type ServerConfig struct {
@@ -12,4 +13,8 @@ type ServerConfig struct {
 	IdleTimeout  time.Duration `env:"IDLE_TIMEOUT" env-default:"10s"`
 	ReadTimeout  time.Duration `env:"READ_TIMEOUT" env-default:"10s"`
 	WriteTimeout time.Duration `env:"WRITE_TIMEOUT" env-default:"10s"`
+}
+
+type PostgresConfig struct {
+	DSN string `env:"POSTGRES_DSN" env-required:"true"`
 }
