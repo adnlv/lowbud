@@ -5,6 +5,7 @@ go 1.26
 require (
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/joho/godotenv v1.5.1
+	github.com/shopspring/decimal v1.4.0
 )
 
 require (
