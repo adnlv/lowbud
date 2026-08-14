@@ -8,11 +8,30 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/adnlv/lowbud/internal/config"
 )
 
+func mustReadConfig() *config.Config {
+	err := config.InitEnv()
+	if err != nil {
+		panic(err)
+	}
+
+	envConfig, err := config.ReadEnv()
+	if err != nil {
+		panic(err)
+	}
+
+	return envConfig
+}
+
 func main() {
+	cfg := mustReadConfig()
+
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		AddSource: true,
 		Level:     slog.LevelDebug,
@@ -21,11 +40,11 @@ func main() {
 
 	mux := http.NewServeMux()
 	server := &http.Server{
-		Addr:         net.JoinHostPort("localhost", "8080"),
+		Addr:         net.JoinHostPort(cfg.Server.Host, strconv.Itoa(cfg.Server.Port)),
 		Handler:      mux,
-		IdleTimeout:  10 * time.Second,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  cfg.Server.IdleTimeout,
+		ReadTimeout:  cfg.Server.ReadTimeout,
+		WriteTimeout: cfg.Server.WriteTimeout,
 	}
 
 	go func() {
