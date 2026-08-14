@@ -29,15 +29,15 @@ func mustReadConfig() *config.Config {
 	return envConfig
 }
 
-func main() {
-	cfg := mustReadConfig()
-
+func mustInitLogger() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		AddSource: true,
 		Level:     slog.LevelDebug,
 	}))
 	slog.SetDefault(logger)
+}
 
+func mustListenAndServe(cfg *config.Config) {
 	mux := http.NewServeMux()
 	server := &http.Server{
 		Addr:         net.JoinHostPort(cfg.Server.Host, strconv.Itoa(cfg.Server.Port)),
@@ -67,4 +67,10 @@ func main() {
 		os.Exit(1)
 	}
 	slog.Debug("Server shut down")
+}
+
+func main() {
+	cfg := mustReadConfig()
+	mustInitLogger()
+	mustListenAndServe(cfg)
 }
