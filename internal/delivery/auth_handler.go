@@ -26,38 +26,8 @@ func NewAuthHandler(pgxPool *pgxpool.Pool, accessTokenManager auth.AccessTokenMa
 	}
 }
 
-type accountView struct {
-	ID           string  `json:"id,omitempty"`
-	RegisteredAt string  `json:"registered_at,omitempty"`
-	UpdatedAt    string  `json:"updated_at,omitempty"`
-	ClosedAt     *string `json:"closed_at,omitempty"`
-}
-
-func newAccountView(account *model.Account) *accountView {
-	view := &accountView{
-		ID:           account.ID.String(),
-		RegisteredAt: account.RegisteredAt.Format(time.RFC3339),
-		UpdatedAt:    account.UpdatedAt.Format(time.RFC3339),
-	}
-	if account.ClosedAt != nil {
-		view.ClosedAt = new(string)
-		*view.ClosedAt = account.ClosedAt.Format(time.RFC3339)
-	}
-	return view
-}
-
-type registerRequest struct {
-	Password string `json:"password"`
-}
-
-type authResponse struct {
-	AccessToken string       `json:"access_token"`
-	TokenType   string       `json:"token_type"`
-	Account     *accountView `json:"account"`
-}
-
 func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-	var req registerRequest
+	var req model.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -94,7 +64,8 @@ func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jwt, err := a.accessTokenManager.Generate(&auth.AccessTokenPayload{AccountID: account.ID})
+	accessTokenPayload := &auth.AccessTokenPayload{AccountID: account.ID}
+	accessToken, err := a.accessTokenManager.Generate(accessTokenPayload)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -102,9 +73,9 @@ func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	_ = json.NewEncoder(w).Encode(authResponse{
-		AccessToken: jwt,
+	_ = json.NewEncoder(w).Encode(model.AuthResponse{
+		AccessToken: accessToken,
 		TokenType:   "Bearer",
-		Account:     newAccountView(account),
+		Account:     model.NewAccountView(account),
 	})
 }
