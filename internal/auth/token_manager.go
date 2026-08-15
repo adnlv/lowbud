@@ -3,13 +3,7 @@ package auth
 import "github.com/google/uuid"
 
 type AccessTokenPayload struct {
-	AccountIDs []uuid.UUID `json:"account_ids"`
-}
-
-func NewAccountIDsList(ids ...uuid.UUID) []uuid.UUID {
-	l := make([]uuid.UUID, 0, len(ids))
-	l = append(l, ids...)
-	return l
+	AccountID uuid.UUID `json:"account_id"`
 }
 
 type TokenManager interface {

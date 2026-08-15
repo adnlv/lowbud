@@ -81,7 +81,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessTokenPayload := &auth.AccessTokenPayload{AccountIDs: auth.NewAccountIDsList(account.ID)}
+	accessTokenPayload := &auth.AccessTokenPayload{AccountID: account.ID}
 	accessToken, err := h.tokenManager.GenerateAccessToken(accessTokenPayload)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
@@ -142,7 +142,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessTokenPayload := &auth.AccessTokenPayload{AccountIDs: auth.NewAccountIDsList(account.ID)}
+	accessTokenPayload := &auth.AccessTokenPayload{AccountID: account.ID}
 	accessToken, err := h.tokenManager.GenerateAccessToken(accessTokenPayload)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
