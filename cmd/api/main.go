@@ -74,10 +74,10 @@ func mustConnectToPostgres(cfg *config.Config) *pgxpool.Pool {
 func mustListenAndServe(cfg *config.Config, dbpool *pgxpool.Pool) {
 	mux := http.NewServeMux()
 
-	jwtManager := auth.NewJwtManager(cfg.Jwt.Secret, cfg.Jwt.TTL)
+	accessTokenManager := auth.NewJwtManager(cfg.Jwt.Secret, cfg.Jwt.TTL)
 	passwordHasher := hash.NewBcryptPasswordHasher(bcrypt.DefaultCost)
 
-	authHandler := delivery.NewAuthHandler(dbpool, jwtManager, passwordHasher)
+	authHandler := delivery.NewAuthHandler(dbpool, accessTokenManager, passwordHasher)
 	mux.HandleFunc("POST /api/v1/auth/register", authHandler.Register)
 
 	server := &http.Server{

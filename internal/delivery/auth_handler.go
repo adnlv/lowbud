@@ -13,16 +13,16 @@ import (
 )
 
 type AuthHandler struct {
-	pgxPool        *pgxpool.Pool
-	jwtManager     *auth.JwtManager
-	passwordHasher hash.PasswordHasher
+	pgxPool            *pgxpool.Pool
+	accessTokenManager auth.AccessTokenManager
+	passwordHasher     hash.PasswordHasher
 }
 
-func NewAuthHandler(pgxPool *pgxpool.Pool, jwtManager *auth.JwtManager, passwordHasher hash.PasswordHasher) *AuthHandler {
+func NewAuthHandler(pgxPool *pgxpool.Pool, accessTokenManager auth.AccessTokenManager, passwordHasher hash.PasswordHasher) *AuthHandler {
 	return &AuthHandler{
-		pgxPool:        pgxPool,
-		jwtManager:     jwtManager,
-		passwordHasher: passwordHasher,
+		pgxPool:            pgxPool,
+		accessTokenManager: accessTokenManager,
+		passwordHasher:     passwordHasher,
 	}
 }
 
@@ -94,7 +94,7 @@ func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jwt, err := a.jwtManager.New(account.ID)
+	jwt, err := a.accessTokenManager.Generate(&auth.AccessTokenPayload{AccountID: account.ID})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

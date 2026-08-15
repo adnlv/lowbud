@@ -5,65 +5,71 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/adnlv/lowbud/internal/model"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
-type jwtClaims struct {
+type AccessTokenPayload struct {
+	AccountID uuid.UUID `json:"account_id"`
+}
+
+type AccessTokenManager interface {
+	Generate(payload *AccessTokenPayload) (string, error)
+	Validate(tokenStr string) (*AccessTokenPayload, error)
+}
+
+type JwtClaims struct {
+	AccessTokenPayload
 	jwt.RegisteredClaims
-	model.JwtClaims
 }
 
 type JwtManager struct {
-	secret []byte
-	ttl    time.Duration
+	Secret   []byte
+	Duration time.Duration
 }
 
-func NewJwtManager(secret string, ttl time.Duration) *JwtManager {
+func NewJwtManager(secret string, duration time.Duration) *JwtManager {
 	return &JwtManager{
-		secret: []byte(secret),
-		ttl:    ttl,
+		Secret:   []byte(secret),
+		Duration: duration,
 	}
 }
 
-func (j *JwtManager) New(accountId uuid.UUID) (string, error) {
-	claims := jwtClaims{
+func (m *JwtManager) Generate(payload *AccessTokenPayload) (string, error) {
+	claims := JwtClaims{
+		AccessTokenPayload: *payload,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    "lowbud-api",
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(j.ttl)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(m.Duration)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-		JwtClaims: model.JwtClaims{
-			AccountID: accountId,
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedToken, err := token.SignedString(j.secret)
+	signedToken, err := token.SignedString(m.Secret)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("JwtManager.Generate: failed to sign token: %v", err)
 	}
 	return signedToken, nil
 }
 
-func (j *JwtManager) Validate(tokenStr string) (*model.JwtClaims, error) {
-	token, err := jwt.ParseWithClaims(tokenStr, &jwtClaims{}, func(token *jwt.Token) (any, error) {
+func (m *JwtManager) Validate(tokenStr string) (*AccessTokenPayload, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, &JwtClaims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("auth: unexpected signing method: %v", token.Header["alg"])
+			return nil, fmt.Errorf("JwtManager.Validate: unexpected signing method: %v", token.Header["alg"])
 		}
-		return j.secret, nil
+		return m.Secret, nil
 	})
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
-			return nil, fmt.Errorf("auth: token has expired")
+			return nil, fmt.Errorf("JwtManager.Validate: token has expired")
 		}
-		return nil, fmt.Errorf("auth: invalid token: %w", err)
+		return nil, fmt.Errorf("JwtManager.Validate: invalid token: %w", err)
 	}
 
-	claims, ok := token.Claims.(*jwtClaims)
+	claims, ok := token.Claims.(*JwtClaims)
 	if !ok || !token.Valid {
-		return nil, fmt.Errorf("auth: token claims are invalid")
+		return nil, fmt.Errorf("JwtManager.Validate: invalid token claims")
 	}
-	return &claims.JwtClaims, nil
+	return &claims.AccessTokenPayload, nil
 }
