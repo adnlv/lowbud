@@ -8,7 +8,7 @@ import (
 	"github.com/adnlv/lowbud/internal/auth"
 	"github.com/adnlv/lowbud/internal/model"
 	"github.com/adnlv/lowbud/pkg/hash"
-	"github.com/google/uuid"
+	"github.com/adnlv/lowbud/pkg/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -16,13 +16,20 @@ type AuthHandler struct {
 	pgxPool            *pgxpool.Pool
 	accessTokenManager auth.AccessTokenManager
 	passwordHasher     hash.PasswordHasher
+	uuidGenerator      uuid.Generator
 }
 
-func NewAuthHandler(pgxPool *pgxpool.Pool, accessTokenManager auth.AccessTokenManager, passwordHasher hash.PasswordHasher) *AuthHandler {
+func NewAuthHandler(
+	pgxPool *pgxpool.Pool,
+	accessTokenManager auth.AccessTokenManager,
+	passwordHasher hash.PasswordHasher,
+	uuidGenerator uuid.Generator,
+) *AuthHandler {
 	return &AuthHandler{
 		pgxPool:            pgxPool,
 		accessTokenManager: accessTokenManager,
 		passwordHasher:     passwordHasher,
+		uuidGenerator:      uuidGenerator,
 	}
 }
 
@@ -33,7 +40,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := uuid.NewV7()
+	id, err := h.uuidGenerator.Generate()
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return

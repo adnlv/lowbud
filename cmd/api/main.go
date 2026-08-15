@@ -16,6 +16,7 @@ import (
 	"github.com/adnlv/lowbud/internal/config"
 	"github.com/adnlv/lowbud/internal/delivery"
 	"github.com/adnlv/lowbud/pkg/hash"
+	"github.com/adnlv/lowbud/pkg/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	pgxUUID "github.com/vgarvardt/pgx-google-uuid/v5"
@@ -76,8 +77,9 @@ func mustListenAndServe(cfg *config.Config, dbpool *pgxpool.Pool) {
 
 	accessTokenManager := auth.NewJwtManager(cfg.Jwt.Secret, cfg.Jwt.TTL)
 	passwordHasher := hash.NewBcryptPasswordHasher(bcrypt.DefaultCost)
+	uuidGenerator := uuid.NewV7Generator()
 
-	authHandler := delivery.NewAuthHandler(dbpool, accessTokenManager, passwordHasher)
+	authHandler := delivery.NewAuthHandler(dbpool, accessTokenManager, passwordHasher, uuidGenerator)
 	mux.HandleFunc("POST /api/v1/auth/register", authHandler.Register)
 
 	server := &http.Server{
