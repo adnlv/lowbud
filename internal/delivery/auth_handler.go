@@ -8,7 +8,6 @@ import (
 	"github.com/adnlv/lowbud/internal/auth"
 	"github.com/adnlv/lowbud/internal/model"
 	"github.com/adnlv/lowbud/pkg/hash"
-	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -34,7 +33,6 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	validate := validator.New()
 	if err := validate.Struct(req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
