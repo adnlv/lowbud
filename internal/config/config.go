@@ -21,6 +21,6 @@ type PostgresConfig struct {
 }
 
 type JwtConfig struct {
-	Secret string `env:"JWT_SECRET" env-required:"true"`
-	TTL    string `env:"JWT_TTL" env-default:"1h"`
+	Secret string        `env:"JWT_SECRET" env-required:"true"`
+	TTL    time.Duration `env:"JWT_TTL" env-default:"1h"`
 }

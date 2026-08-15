@@ -12,7 +12,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/adnlv/lowbud/internal/auth"
 	"github.com/adnlv/lowbud/internal/config"
+	"github.com/adnlv/lowbud/internal/delivery"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	pgxUUID "github.com/vgarvardt/pgx-google-uuid/v5"
@@ -67,8 +69,12 @@ func mustConnectToPostgres(cfg *config.Config) *pgxpool.Pool {
 	return dbpool
 }
 
-func mustListenAndServe(cfg *config.Config) {
+func mustListenAndServe(cfg *config.Config, dbpool *pgxpool.Pool) {
 	mux := http.NewServeMux()
+
+	authHandler := delivery.NewAuthHandler(dbpool, auth.NewJwtManager(cfg.Jwt.Secret, cfg.Jwt.TTL))
+	mux.HandleFunc("POST /api/v1/auth/register", authHandler.Register)
+
 	server := &http.Server{
 		Addr:         net.JoinHostPort(cfg.Server.Host, strconv.Itoa(cfg.Server.Port)),
 		Handler:      mux,
@@ -106,5 +112,5 @@ func main() {
 	dbpool := mustConnectToPostgres(cfg)
 	defer dbpool.Close()
 
-	mustListenAndServe(cfg)
+	mustListenAndServe(cfg, dbpool)
 }
