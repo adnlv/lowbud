@@ -5,6 +5,7 @@ import "time"
 type Config struct {
 	Server   ServerConfig
 	Postgres PostgresConfig
+	Jwt      JwtConfig
 }
 
 type ServerConfig struct {
@@ -17,4 +18,9 @@ type ServerConfig struct {
 
 type PostgresConfig struct {
 	URL string `env:"POSTGRES_URL" env-required:"true"`
+}
+
+type JwtConfig struct {
+	Secret string `env:"JWT_SECRET" env-required:"true"`
+	TTL    string `env:"JWT_TTL" env-default:"1h"`
 }
