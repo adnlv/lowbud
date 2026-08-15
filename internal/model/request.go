@@ -1,5 +1,5 @@
 package model
 
 type RegisterRequest struct {
-	Password string `json:"password"`
+	Password string `json:"password" validate:"required"`
 }

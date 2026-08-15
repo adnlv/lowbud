@@ -8,6 +8,7 @@ import (
 	"github.com/adnlv/lowbud/internal/auth"
 	"github.com/adnlv/lowbud/internal/model"
 	"github.com/adnlv/lowbud/pkg/hash"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -29,6 +30,12 @@ func NewAuthHandler(pgxPool *pgxpool.Pool, accessTokenManager auth.AccessTokenMa
 func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req model.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	validate := validator.New()
+	if err := validate.Struct(req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
