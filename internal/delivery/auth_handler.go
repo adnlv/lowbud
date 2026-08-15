@@ -89,6 +89,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: store session information in the database
 	refreshToken, err := h.tokenManager.GenerateRefreshToken()
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
