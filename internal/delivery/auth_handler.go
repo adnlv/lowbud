@@ -13,23 +13,23 @@ import (
 )
 
 type AuthHandler struct {
-	pgxPool            *pgxpool.Pool
-	accessTokenManager auth.AccessTokenManager
-	passwordHasher     hash.PasswordHasher
-	uuidGenerator      uuid.Generator
+	pgxPool        *pgxpool.Pool
+	tokenManager   auth.TokenManager
+	passwordHasher hash.PasswordHasher
+	uuidGenerator  uuid.Generator
 }
 
 func NewAuthHandler(
 	pgxPool *pgxpool.Pool,
-	accessTokenManager auth.AccessTokenManager,
+	tokenManager auth.TokenManager,
 	passwordHasher hash.PasswordHasher,
 	uuidGenerator uuid.Generator,
 ) *AuthHandler {
 	return &AuthHandler{
-		pgxPool:            pgxPool,
-		accessTokenManager: accessTokenManager,
-		passwordHasher:     passwordHasher,
-		uuidGenerator:      uuidGenerator,
+		pgxPool:        pgxPool,
+		tokenManager:   tokenManager,
+		passwordHasher: passwordHasher,
+		uuidGenerator:  uuidGenerator,
 	}
 }
 
@@ -83,7 +83,13 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	accessTokenPayload := &auth.AccessTokenPayload{AccountID: account.ID}
-	accessToken, err := h.accessTokenManager.Generate(accessTokenPayload)
+	accessToken, err := h.tokenManager.GenerateAccessToken(accessTokenPayload)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	refreshToken, err := h.tokenManager.GenerateRefreshToken()
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -97,8 +103,9 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	_ = json.NewEncoder(w).Encode(model.AuthResponse{
-		AccessToken: accessToken,
-		TokenType:   "Bearer",
-		Account:     model.NewAccountView(account),
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		TokenType:    "Bearer",
+		Account:      model.NewAccountView(account),
 	})
 }
