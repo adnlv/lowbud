@@ -7,18 +7,23 @@ import (
 
 	"github.com/adnlv/lowbud/internal/auth"
 	"github.com/adnlv/lowbud/internal/model"
+	"github.com/adnlv/lowbud/pkg/hash"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthHandler struct {
-	pgxPool    *pgxpool.Pool
-	jwtManager *auth.JwtManager
+	pgxPool        *pgxpool.Pool
+	jwtManager     *auth.JwtManager
+	passwordHasher hash.PasswordHasher
 }
 
-type registerRequest struct {
-	Password string `json:"password"`
+func NewAuthHandler(pgxPool *pgxpool.Pool, jwtManager *auth.JwtManager, passwordHasher hash.PasswordHasher) *AuthHandler {
+	return &AuthHandler{
+		pgxPool:        pgxPool,
+		jwtManager:     jwtManager,
+		passwordHasher: passwordHasher,
+	}
 }
 
 type accountView struct {
@@ -41,6 +46,10 @@ func newAccountView(account *model.Account) *accountView {
 	return view
 }
 
+type registerRequest struct {
+	Password string `json:"password"`
+}
+
 type authResponse struct {
 	AccessToken string       `json:"access_token"`
 	TokenType   string       `json:"token_type"`
@@ -60,7 +69,7 @@ func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	passwordBytes, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	passwordHash, err := a.passwordHasher.Hash(req.Password)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -68,7 +77,7 @@ func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	account := &model.Account{
 		ID:           id,
-		PasswordHash: string(passwordBytes),
+		PasswordHash: passwordHash,
 		RegisteredAt: time.Now(),
 		UpdatedAt:    time.Now(),
 	}
@@ -98,11 +107,4 @@ func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		TokenType:   "Bearer",
 		Account:     newAccountView(account),
 	})
-}
-
-func NewAuthHandler(pgxPool *pgxpool.Pool, jwtManager *auth.JwtManager) *AuthHandler {
-	return &AuthHandler{
-		pgxPool:    pgxPool,
-		jwtManager: jwtManager,
-	}
 }

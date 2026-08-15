@@ -15,9 +15,11 @@ import (
 	"github.com/adnlv/lowbud/internal/auth"
 	"github.com/adnlv/lowbud/internal/config"
 	"github.com/adnlv/lowbud/internal/delivery"
+	"github.com/adnlv/lowbud/pkg/hash"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	pgxUUID "github.com/vgarvardt/pgx-google-uuid/v5"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func mustReadConfig() *config.Config {
@@ -72,7 +74,10 @@ func mustConnectToPostgres(cfg *config.Config) *pgxpool.Pool {
 func mustListenAndServe(cfg *config.Config, dbpool *pgxpool.Pool) {
 	mux := http.NewServeMux()
 
-	authHandler := delivery.NewAuthHandler(dbpool, auth.NewJwtManager(cfg.Jwt.Secret, cfg.Jwt.TTL))
+	jwtManager := auth.NewJwtManager(cfg.Jwt.Secret, cfg.Jwt.TTL)
+	passwordHasher := hash.NewBcryptPasswordHasher(bcrypt.DefaultCost)
+
+	authHandler := delivery.NewAuthHandler(dbpool, jwtManager, passwordHasher)
 	mux.HandleFunc("POST /api/v1/auth/register", authHandler.Register)
 
 	server := &http.Server{
