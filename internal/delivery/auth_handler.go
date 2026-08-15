@@ -27,7 +27,7 @@ func NewAuthHandler(pgxPool *pgxpool.Pool, accessTokenManager auth.AccessTokenMa
 	}
 }
 
-func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req model.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -46,7 +46,7 @@ func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	passwordHash, err := a.passwordHasher.Hash(req.Password)
+	passwordHash, err := h.passwordHasher.Hash(req.Password)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -59,7 +59,18 @@ func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt:    time.Now(),
 	}
 
-	if _, err = a.pgxPool.Exec(
+	tx, err := h.pgxPool.Begin(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback(r.Context())
+		}
+	}()
+
+	if _, err = tx.Exec(
 		r.Context(),
 		`INSERT INTO accounts (id, password_hash, registered_at, updated_at) VALUES ($1, $2, $3, $4)`,
 		account.ID,
@@ -72,8 +83,13 @@ func (a *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	accessTokenPayload := &auth.AccessTokenPayload{AccountID: account.ID}
-	accessToken, err := a.accessTokenManager.Generate(accessTokenPayload)
+	accessToken, err := h.accessTokenManager.Generate(accessTokenPayload)
 	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err = tx.Commit(r.Context()); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
