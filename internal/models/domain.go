@@ -3,11 +3,12 @@ package models
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )
 
 type Account struct {
-	ID           string
+	ID           uuid.UUID
 	PasswordHash string
 	RegisteredAt time.Time
 	UpdatedAt    time.Time
@@ -15,9 +16,9 @@ type Account struct {
 }
 
 type Transaction struct {
-	ID                 string
-	SourceAccount      string
-	DestinationAccount string
+	ID                 uuid.UUID
+	SourceAccount      uuid.UUID
+	DestinationAccount uuid.UUID
 	CurrencyCode       string
 	Amount             decimal.Decimal
 	CreatedAt          time.Time
