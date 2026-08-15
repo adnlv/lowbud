@@ -1,7 +1,6 @@
 package delivery
 
 import (
-	"encoding/json"
 	"net/http"
 	"time"
 
@@ -101,12 +100,66 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	_ = json.NewEncoder(w).Encode(model.AuthResponse{
+	writeJson(w, http.StatusCreated, model.AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		TokenType:    "Bearer",
 		Account:      model.NewAccountView(account),
+	})
+}
+
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	var req model.LoginRequest
+	if err := decodeAndValidateRequest(r.Body, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var err error
+	var account model.Account
+	account.ID, err = h.uuidGenerator.Parse(req.AccountID)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err = h.pgxPool.QueryRow(
+		r.Context(),
+		`SELECT password_hash, registered_at, updated_at, closed_at FROM accounts WHERE id = $1`,
+		account.ID,
+	).Scan(
+		&account.PasswordHash,
+		&account.RegisteredAt,
+		&account.UpdatedAt,
+		&account.ClosedAt,
+	); err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+
+	if err = h.passwordHasher.Compare(req.Password, account.PasswordHash); err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+
+	accessTokenPayload := &auth.AccessTokenPayload{AccountID: account.ID}
+	accessToken, err := h.tokenManager.GenerateAccessToken(accessTokenPayload)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// TODO: store session information in the database
+	refreshToken, err := h.tokenManager.GenerateRefreshToken()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJson(w, http.StatusOK, model.AuthResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+		TokenType:    "Bearer",
+		Account:      model.NewAccountView(&account),
 	})
 }
