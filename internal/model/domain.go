@@ -19,7 +19,6 @@ type Transaction struct {
 	ID                 uuid.UUID
 	SourceAccount      uuid.UUID
 	DestinationAccount uuid.UUID
-	CurrencyCode       string
 	Amount             decimal.Decimal
 	CreatedAt          time.Time
 }
