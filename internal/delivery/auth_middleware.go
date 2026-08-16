@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/http"
 	"strings"
+
+	"github.com/adnlv/lowbud/internal/auth"
 )
 
 type ctxKey string
@@ -33,4 +35,9 @@ func (h *AuthHandler) Middleware(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), claimsCtxKey, claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func ClaimsFromContext(ctx context.Context) *auth.AccessTokenPayload {
+	claims, _ := ctx.Value(claimsCtxKey).(*auth.AccessTokenPayload)
+	return claims
 }
