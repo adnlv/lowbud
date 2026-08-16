@@ -16,9 +16,9 @@ type Account struct {
 }
 
 type Transaction struct {
-	ID                 uuid.UUID
-	SourceAccount      uuid.UUID
-	DestinationAccount uuid.UUID
-	Amount             decimal.Decimal
-	CreatedAt          time.Time
+	ID                   uuid.UUID
+	SourceAccountID      uuid.UUID
+	DestinationAccountID uuid.UUID
+	Amount               decimal.Decimal
+	CreatedAt            time.Time
 }
