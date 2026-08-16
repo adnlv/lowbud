@@ -83,6 +83,9 @@ func mustListenAndServe(cfg *config.Config, dbpool *pgxpool.Pool) {
 	mux.HandleFunc("POST /api/v1/auth/register", authHandler.Register)
 	mux.HandleFunc("POST /api/v1/auth/login", authHandler.Login)
 
+	txHandler := delivery.NewTxHandler(dbpool, uuidGenerator)
+	mux.Handle("POST /api/v1/debit", authHandler.Middleware(http.HandlerFunc(txHandler.Debit)))
+
 	server := &http.Server{
 		Addr:         net.JoinHostPort(cfg.Server.Host, strconv.Itoa(cfg.Server.Port)),
 		Handler:      mux,
