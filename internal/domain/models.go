@@ -15,14 +15,6 @@ type Account struct {
 	ClosedAt     *time.Time
 }
 
-type LedgerTransaction struct {
-	ID                   string
-	SourceAccountID      string
-	DestinationAccountID string
-	Amount               uint64
-	CreatedAt            time.Time
-}
-
 type AccessTokenClaims struct {
 	AccountID string `json:"account_id"`
 }
