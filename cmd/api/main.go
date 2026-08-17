@@ -13,9 +13,7 @@ import (
 	"time"
 
 	"github.com/adnlv/lowbud/internal/config"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	pgxUUID "github.com/vgarvardt/pgx-google-uuid/v5"
 )
 
 func mustReadConfig() *config.Config {
@@ -45,11 +43,6 @@ func mustConnectToPostgres(cfg *config.Config) *pgxpool.Pool {
 	if err != nil {
 		slog.Error("Failed to parse postgres config: %s", err)
 		os.Exit(1)
-	}
-
-	pgxConfig.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
-		pgxUUID.Register(conn.TypeMap())
-		return nil
 	}
 
 	dbpool, err := pgxpool.NewWithConfig(context.Background(), pgxConfig)
