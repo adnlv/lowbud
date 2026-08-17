@@ -52,7 +52,7 @@ type authResponse struct {
 	AccessToken string `json:"access_token"`
 }
 
-func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) BasicLogin(w http.ResponseWriter, r *http.Request) {
 	req := new(loginRequest)
 	if err := decodeAndValidateJson(r.Body, req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())

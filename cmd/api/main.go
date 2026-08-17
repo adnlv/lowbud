@@ -75,7 +75,7 @@ func mustListenAndServe(cfg *config.Config, db *pgxpool.Pool) {
 
 	authHandler := delivery.NewAuthHandler(authService)
 	mux.HandleFunc("POST /api/v1/auth/register", authHandler.RegisterAccount)
-	mux.HandleFunc("POST /api/v1/auth/login", authHandler.Login)
+	mux.HandleFunc("POST /api/v1/auth/login/basic", authHandler.BasicLogin)
 
 	accountHandler := delivery.NewAccountHandler(db)
 	mux.HandleFunc("GET /api/v1/account", authHandler.DemandAccessTokenMiddleware(accountHandler.GetAccountInfo))
