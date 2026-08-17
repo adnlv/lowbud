@@ -14,6 +14,7 @@ import (
 
 	"github.com/adnlv/lowbud/internal/config"
 	"github.com/adnlv/lowbud/internal/delivery"
+	"github.com/adnlv/lowbud/internal/domain"
 	"github.com/adnlv/lowbud/internal/infrastructure"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
@@ -70,7 +71,9 @@ func mustListenAndServe(cfg *config.Config, db *pgxpool.Pool) {
 	passwordHasher := infrastructure.NewBcryptPasswordHasher(bcrypt.DefaultCost)
 	accessTokenProvider := infrastructure.NewJwtProvider([]byte(cfg.Jwt.Secret), cfg.Jwt.AccessTokenDuration)
 
-	authHandler := delivery.NewAuthHandler(db, uuidProvider, passwordHasher, accessTokenProvider)
+	authService := domain.NewAuthService(db, uuidProvider, passwordHasher, accessTokenProvider)
+
+	authHandler := delivery.NewAuthHandler(authService)
 	mux.HandleFunc("POST /api/v1/auth/register", authHandler.RegisterAccount)
 	mux.HandleFunc("POST /api/v1/auth/login", authHandler.Login)
 
