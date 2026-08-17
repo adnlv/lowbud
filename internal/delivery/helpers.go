@@ -44,9 +44,9 @@ func decodeAndValidateJson(body io.ReadCloser, data any) error {
 	return nil
 }
 
-type ctxKey string
+type contextKey string
 
-const accessTokenClaimsContextKey ctxKey = "access_token_claims"
+const accessTokenClaimsContextKey contextKey = "access_token_claims"
 
 func accessTokenClaimsFromContext(ctx context.Context) *domain.AccessTokenClaims {
 	claims, _ := ctx.Value(accessTokenClaimsContextKey).(*domain.AccessTokenClaims)
