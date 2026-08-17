@@ -86,3 +86,50 @@ VALUES ($1, $2, $3, $4, $5, $6, $7)
 
 	writeStatusCode(w, http.StatusCreated)
 }
+
+type AuthResponse struct {
+	AccessToken string `json:"access_token"`
+}
+
+type loginRequest struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
+}
+
+func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
+	req := new(loginRequest)
+	if err := decodeAndValidateJson(r.Body, req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	account := &domain.Account{Email: req.Email}
+
+	const selectAccountByIdQuery = `
+SELECT id, password_hash FROM accounts WHERE email = $1 AND closed_at IS NULL
+`
+	if err := h.DB.QueryRow(
+		r.Context(),
+		selectAccountByIdQuery,
+		account.Email,
+	).Scan(
+		&account.ID,
+		&account.PasswordHash,
+	); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if err := h.PasswordHasher.CompareHashAndPassword(account.PasswordHash, req.Password); err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+
+	accessToken, err := h.AccessTokenProvider.NewAccessToken(&domain.AccessTokenClaims{AccountID: account.ID})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJson(w, http.StatusOK, &AuthResponse{AccessToken: accessToken})
+}
