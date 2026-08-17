@@ -1,24 +1,26 @@
-package model
+package domain
 
 import (
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )
 
 type Account struct {
-	ID           uuid.UUID
+	ID           string
+	Forename     string
+	Surname      string
+	Email        string
 	PasswordHash string
 	RegisteredAt time.Time
 	UpdatedAt    time.Time
 	ClosedAt     *time.Time
 }
 
-type Transaction struct {
-	ID                   uuid.UUID
-	SourceAccountID      uuid.UUID
-	DestinationAccountID uuid.UUID
+type LedgerTransaction struct {
+	ID                   string
+	SourceAccountID      string
+	DestinationAccountID string
 	Amount               decimal.Decimal
 	CreatedAt            time.Time
 }

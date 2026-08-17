@@ -12,15 +12,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/adnlv/lowbud/internal/auth"
 	"github.com/adnlv/lowbud/internal/config"
-	"github.com/adnlv/lowbud/internal/delivery"
-	"github.com/adnlv/lowbud/pkg/hash"
-	"github.com/adnlv/lowbud/pkg/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	pgxUUID "github.com/vgarvardt/pgx-google-uuid/v5"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func mustReadConfig() *config.Config {
@@ -74,17 +69,6 @@ func mustConnectToPostgres(cfg *config.Config) *pgxpool.Pool {
 
 func mustListenAndServe(cfg *config.Config, dbpool *pgxpool.Pool) {
 	mux := http.NewServeMux()
-
-	tokenManager := auth.NewJwtManager(cfg.Jwt.Secret, cfg.Jwt.AccessTokenDuration, cfg.Jwt.RefreshTokenDuration)
-	passwordHasher := hash.NewBcryptPasswordHasher(bcrypt.DefaultCost)
-	uuidGenerator := uuid.NewV7Generator()
-
-	authHandler := delivery.NewAuthHandler(dbpool, tokenManager, passwordHasher, uuidGenerator)
-	mux.HandleFunc("POST /api/v1/auth/register", authHandler.Register)
-	mux.HandleFunc("POST /api/v1/auth/login", authHandler.Login)
-
-	txHandler := delivery.NewTxHandler(dbpool, uuidGenerator)
-	mux.Handle("POST /api/v1/debit", authHandler.Middleware(http.HandlerFunc(txHandler.Debit)))
 
 	server := &http.Server{
 		Addr:         net.JoinHostPort(cfg.Server.Host, strconv.Itoa(cfg.Server.Port)),
