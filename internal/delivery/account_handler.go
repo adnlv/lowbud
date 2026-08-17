@@ -62,7 +62,7 @@ func (h *AccountHandler) CloseAccount(w http.ResponseWriter, r *http.Request) {
 	}
 
 	const closeAccountByIdQuery = `
-UPDATE accounts SET closed_at = $2 WHERE id = $1 
+UPDATE accounts SET closed_at = $2 WHERE id = $1 AND closed_at IS NULL
 `
 	if _, err := h.DB.Exec(
 		r.Context(),
