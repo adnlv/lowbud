@@ -10,9 +10,8 @@ CREATE TABLE accounts (
     closed_at TIMESTAMPTZ
 );
 
-CREATE UNIQUE INDEX idx_accounts_active_email
-ON accounts (email)
-WHERE closed_at IS NULL;
+CREATE UNIQUE INDEX idx_accounts_active_email ON accounts (email) WHERE closed_at IS NULL;
 
 -- +goose Down
+DROP INDEX idx_accounts_active_email;
 DROP TABLE accounts;
