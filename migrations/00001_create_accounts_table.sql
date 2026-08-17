@@ -5,8 +5,8 @@ CREATE TABLE accounts (
     forename TEXT NOT NULL,
     surname TEXT NOT NULL,
     password_hash TEXT NOT NULL,
-    registered_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    registered_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     closed_at TIMESTAMPTZ
 );
 
