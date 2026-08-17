@@ -2,8 +2,6 @@ package domain
 
 import (
 	"time"
-
-	"github.com/shopspring/decimal"
 )
 
 type Account struct {
@@ -21,6 +19,6 @@ type LedgerTransaction struct {
 	ID                   string
 	SourceAccountID      string
 	DestinationAccountID string
-	Amount               decimal.Decimal
+	Amount               uint64
 	CreatedAt            time.Time
 }
