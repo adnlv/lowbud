@@ -17,7 +17,7 @@ type AccountJSONView struct {
 	Email        string `json:"email,omitempty"`
 	Forename     string `json:"forename,omitempty"`
 	Surname      string `json:"surname,omitempty"`
-	RegisteredAt string `json:"registered_at"`
+	RegisteredAt string `json:"registered_at,omitempty"`
 }
 
 func NewAccountJSONView(account *domain.Account) *AccountJSONView {
