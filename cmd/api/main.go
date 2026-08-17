@@ -13,7 +13,10 @@ import (
 	"time"
 
 	"github.com/adnlv/lowbud/internal/config"
+	"github.com/adnlv/lowbud/internal/delivery"
+	"github.com/adnlv/lowbud/internal/infrastructure"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func mustReadConfig() *config.Config {
@@ -60,8 +63,13 @@ func mustConnectToPostgres(cfg *config.Config) *pgxpool.Pool {
 	return dbpool
 }
 
-func mustListenAndServe(cfg *config.Config, dbpool *pgxpool.Pool) {
+func mustListenAndServe(cfg *config.Config, db *pgxpool.Pool) {
 	mux := http.NewServeMux()
+
+	uuidProvider := infrastructure.NewGoogleUUIDV7Provider()
+	passwordHasher := infrastructure.NewBcryptPasswordHasher(bcrypt.DefaultCost)
+	accessTokenProvider := infrastructure.NewJwtProvider([]byte(cfg.Jwt.Secret), cfg.Jwt.AccessTokenDuration)
+	_ = delivery.NewAuthHandler(db, uuidProvider, passwordHasher, accessTokenProvider)
 
 	server := &http.Server{
 		Addr:         net.JoinHostPort(cfg.Server.Host, strconv.Itoa(cfg.Server.Port)),
