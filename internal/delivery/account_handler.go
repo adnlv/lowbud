@@ -13,7 +13,6 @@ type AccountHandler struct {
 }
 
 type AccountJSONView struct {
-	ID           string `json:"id,omitempty"`
 	Email        string `json:"email,omitempty"`
 	Forename     string `json:"forename,omitempty"`
 	Surname      string `json:"surname,omitempty"`
@@ -22,7 +21,6 @@ type AccountJSONView struct {
 
 func NewAccountJSONView(account *domain.Account) *AccountJSONView {
 	return &AccountJSONView{
-		ID:           account.ID,
 		Email:        account.Email,
 		Forename:     account.Forename,
 		Surname:      account.Surname,
