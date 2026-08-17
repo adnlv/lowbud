@@ -1,5 +1,5 @@
 -- +goose Up
-CREATE TABLE transactions (
+CREATE TABLE ledger_transactions (
     id UUID PRIMARY KEY,
     source_account_id UUID NOT NULL REFERENCES accounts (id),
     destination_account_id UUID NOT NULL REFERENCES accounts (id),
@@ -8,4 +8,4 @@ CREATE TABLE transactions (
 );
 
 -- +goose Down
-DROP TABLE transactions;
+DROP TABLE ledger_transactions;
