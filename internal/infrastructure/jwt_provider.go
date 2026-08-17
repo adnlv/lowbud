@@ -46,7 +46,7 @@ func (p *JwtProvider) NewAccessToken(claims *domain.AccessTokenClaims) (string, 
 func (p *JwtProvider) ParseAccessToken(tokenStr string) (*domain.AccessTokenClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &JwtClaims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("%w: %v", domain.ErrUnexpectedSigningMethod, token.Header["alg"])
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		return p.Secret, nil
 	})

@@ -2,10 +2,7 @@ package domain
 
 import "errors"
 
-var (
-	ErrUnexpectedSigningMethod = errors.New("unexpected signing method")
-	ErrTokenExpired            = errors.New("token expired")
-)
+var ErrTokenExpired = errors.New("token expired")
 
 type AccessTokenClaims struct {
 	AccountID string `json:"account_id"`
@@ -13,5 +10,8 @@ type AccessTokenClaims struct {
 
 type AccessTokenProvider interface {
 	NewAccessToken(claims *AccessTokenClaims) (string, error)
+
+	// ParseAccessToken parses, validates, verifies the signature, and returns the
+	// parsed token claims. Returns domain.ErrTokenExpired if the token is expired.
 	ParseAccessToken(tokenStr string) (*AccessTokenClaims, error)
 }
