@@ -1,10 +1,12 @@
 package delivery
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
 
+	"github.com/adnlv/lowbud/internal/domain"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -40,4 +42,13 @@ func decodeAndValidateJson(body io.ReadCloser, data any) error {
 		return err
 	}
 	return nil
+}
+
+type ctxKey string
+
+const accessTokenClaimsContextKey ctxKey = "access_token_claims"
+
+func accessTokenClaimsFromContext(ctx context.Context) *domain.AccessTokenClaims {
+	claims, _ := ctx.Value(accessTokenClaimsContextKey).(*domain.AccessTokenClaims)
+	return claims
 }

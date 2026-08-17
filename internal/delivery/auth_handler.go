@@ -1,7 +1,9 @@
 package delivery
 
 import (
+	"context"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/adnlv/lowbud/internal/domain"
@@ -132,4 +134,28 @@ SELECT id, password_hash FROM accounts WHERE email = $1 AND closed_at IS NULL
 	}
 
 	writeJson(w, http.StatusOK, &AuthResponse{AccessToken: accessToken})
+}
+
+func (h *AuthHandler) DemandAccessTokenMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			writeError(w, http.StatusUnauthorized, "authorization header is missing")
+		}
+
+		authHeaderParts := strings.SplitN(authHeader, " ", 2)
+		if len(authHeaderParts) != 2 || authHeaderParts[0] != "Bearer" {
+			writeError(w, http.StatusUnauthorized, "authorization header is malformed")
+			return
+		}
+
+		claims, err := h.AccessTokenProvider.ParseAccessToken(authHeaderParts[1])
+		if err != nil {
+			writeError(w, http.StatusUnauthorized, err.Error())
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), accessTokenClaimsContextKey, claims)
+		next(w, r.WithContext(ctx))
+	}
 }
