@@ -72,12 +72,13 @@ func mustListenAndServe(cfg *config.Config, db *pgxpool.Pool) {
 	accessTokenProvider := infrastructure.NewJwtProvider([]byte(cfg.Jwt.Secret), cfg.Jwt.AccessTokenDuration)
 
 	authService := domain.NewAuthService(db, uuidProvider, passwordHasher, accessTokenProvider)
+	accountService := domain.NewAccountService(db)
 
 	authHandler := delivery.NewAuthHandler(authService)
 	mux.HandleFunc("POST /api/v1/auth/register", authHandler.RegisterAccount)
 	mux.HandleFunc("POST /api/v1/auth/login/basic", authHandler.BasicLogin)
 
-	accountHandler := delivery.NewAccountHandler(db)
+	accountHandler := delivery.NewAccountHandler(accountService)
 	mux.HandleFunc("GET /api/v1/account", authHandler.DemandAccessTokenMiddleware(accountHandler.GetAccountInfo))
 	mux.HandleFunc("DELETE /api/v1/account", authHandler.DemandAccessTokenMiddleware(accountHandler.CloseAccount))
 

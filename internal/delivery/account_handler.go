@@ -5,22 +5,25 @@ import (
 	"time"
 
 	"github.com/adnlv/lowbud/internal/domain"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type AccountHandler struct {
-	DB *pgxpool.Pool
+	AccountService domain.AccountService
 }
 
-type AccountJSONView struct {
+func NewAccountHandler(accountService domain.AccountService) *AccountHandler {
+	return &AccountHandler{AccountService: accountService}
+}
+
+type accountJsonView struct {
 	Email        string `json:"email,omitempty"`
 	Forename     string `json:"forename,omitempty"`
 	Surname      string `json:"surname,omitempty"`
 	RegisteredAt string `json:"registered_at,omitempty"`
 }
 
-func NewAccountJSONView(account *domain.Account) *AccountJSONView {
-	return &AccountJSONView{
+func newAccountJSONView(account *domain.GetAccountInfoResult) *accountJsonView {
+	return &accountJsonView{
 		Email:        account.Email,
 		Forename:     account.Forename,
 		Surname:      account.Surname,
@@ -31,52 +34,22 @@ func NewAccountJSONView(account *domain.Account) *AccountJSONView {
 func (h *AccountHandler) GetAccountInfo(w http.ResponseWriter, r *http.Request) {
 	accessTokenClaims := accessTokenClaimsFromContext(r.Context())
 
-	account := &domain.Account{ID: accessTokenClaims.AccountID}
-
-	const getAccountByIdQuery = `
-SELECT email, forename, surname, registered_at FROM accounts WHERE id = $1 AND closed_at IS NULL
-`
-	if err := h.DB.QueryRow(
-		r.Context(),
-		getAccountByIdQuery,
-		account.ID,
-	).Scan(
-		&account.Email,
-		&account.Forename,
-		&account.Surname,
-		&account.RegisteredAt,
-	); err != nil {
-		writeError(w, http.StatusNotFound, err.Error())
+	result, err := h.AccountService.GetAccountInfo(r.Context(), &domain.GetAccountInfoQuery{AccountID: accessTokenClaims.AccountID})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	writeJson(w, http.StatusOK, NewAccountJSONView(account))
+	writeJson(w, http.StatusOK, newAccountJSONView(result))
 }
 
 func (h *AccountHandler) CloseAccount(w http.ResponseWriter, r *http.Request) {
 	accessTokenClaims := accessTokenClaimsFromContext(r.Context())
 
-	account := &domain.Account{
-		ID:       accessTokenClaims.AccountID,
-		ClosedAt: new(time.Now()),
-	}
-
-	const closeAccountByIdQuery = `
-UPDATE accounts SET closed_at = $2 WHERE id = $1 AND closed_at IS NULL
-`
-	if _, err := h.DB.Exec(
-		r.Context(),
-		closeAccountByIdQuery,
-		account.ID,
-		account.ClosedAt,
-	); err != nil {
+	if err := h.AccountService.CloseAccount(r.Context(), &domain.CloseAccountCommand{AccountID: accessTokenClaims.AccountID}); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	writeStatusCode(w, http.StatusOK)
-}
-
-func NewAccountHandler(db *pgxpool.Pool) *AccountHandler {
-	return &AccountHandler{DB: db}
 }

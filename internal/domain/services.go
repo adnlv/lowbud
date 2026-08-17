@@ -128,3 +128,79 @@ func (s *authServiceImpl) ParseAccessToken(_ context.Context, tokenStr string) (
 	}
 	return claims, nil
 }
+
+type GetAccountInfoQuery struct {
+	AccountID string
+}
+
+type GetAccountInfoResult struct {
+	Email        string
+	Forename     string
+	Surname      string
+	RegisteredAt time.Time
+}
+
+type CloseAccountCommand struct {
+	AccountID string
+}
+
+type AccountService interface {
+	GetAccountInfo(ctx context.Context, getAccountInfoQuery *GetAccountInfoQuery) (*GetAccountInfoResult, error)
+	CloseAccount(ctx context.Context, closeAccountCommand *CloseAccountCommand) error
+}
+
+type accountServiceImpl struct {
+	DB *pgxpool.Pool
+}
+
+func NewAccountService(db *pgxpool.Pool) AccountService {
+	return &accountServiceImpl{DB: db}
+}
+
+func (s *accountServiceImpl) GetAccountInfo(ctx context.Context, getAccountInfoQuery *GetAccountInfoQuery) (*GetAccountInfoResult, error) {
+	account := &Account{ID: getAccountInfoQuery.AccountID}
+
+	const getAccountByIdQuery = `
+SELECT email, forename, surname, registered_at FROM accounts WHERE id = $1 AND closed_at IS NULL
+`
+	if err := s.DB.QueryRow(
+		ctx,
+		getAccountByIdQuery,
+		account.ID,
+	).Scan(
+		&account.Email,
+		&account.Forename,
+		&account.Surname,
+		&account.RegisteredAt,
+	); err != nil {
+		return nil, err
+	}
+
+	return &GetAccountInfoResult{
+		Email:        account.Email,
+		Forename:     account.Forename,
+		Surname:      account.Surname,
+		RegisteredAt: account.RegisteredAt,
+	}, nil
+}
+
+func (s *accountServiceImpl) CloseAccount(ctx context.Context, closeAccountCommand *CloseAccountCommand) error {
+	account := &Account{
+		ID:       closeAccountCommand.AccountID,
+		ClosedAt: new(time.Now()),
+	}
+
+	const closeAccountByIdQuery = `
+UPDATE accounts SET closed_at = $2 WHERE id = $1 AND closed_at IS NULL
+`
+	if _, err := s.DB.Exec(
+		ctx,
+		closeAccountByIdQuery,
+		account.ID,
+		account.ClosedAt,
+	); err != nil {
+		return err
+	}
+
+	return nil
+}
