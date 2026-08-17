@@ -2,6 +2,8 @@ package domain
 
 import (
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 type Account struct {
@@ -13,6 +15,21 @@ type Account struct {
 	RegisteredAt time.Time
 	UpdatedAt    time.Time
 	ClosedAt     *time.Time
+}
+
+type LedgerTransaction struct {
+	ID             string
+	IdempotencyKey string
+	Description    string
+	CreatedAt      time.Time
+}
+
+type LedgerEntry struct {
+	ID                  string
+	LedgerTransactionID string
+	AccountID           string
+	Amount              decimal.Decimal
+	CreatedAt           time.Time
 }
 
 type AccessTokenClaims struct {
