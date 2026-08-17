@@ -6,9 +6,9 @@ import (
 
 type Account struct {
 	ID           string
+	Email        string
 	Forename     string
 	Surname      string
-	Email        string
 	PasswordHash string
 	RegisteredAt time.Time
 	UpdatedAt    time.Time

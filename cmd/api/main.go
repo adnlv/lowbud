@@ -69,7 +69,9 @@ func mustListenAndServe(cfg *config.Config, db *pgxpool.Pool) {
 	uuidProvider := infrastructure.NewGoogleUUIDV7Provider()
 	passwordHasher := infrastructure.NewBcryptPasswordHasher(bcrypt.DefaultCost)
 	accessTokenProvider := infrastructure.NewJwtProvider([]byte(cfg.Jwt.Secret), cfg.Jwt.AccessTokenDuration)
-	_ = delivery.NewAuthHandler(db, uuidProvider, passwordHasher, accessTokenProvider)
+
+	authHandler := delivery.NewAuthHandler(db, uuidProvider, passwordHasher, accessTokenProvider)
+	mux.HandleFunc("POST /api/v1/auth/register", authHandler.RegisterAccount)
 
 	server := &http.Server{
 		Addr:         net.JoinHostPort(cfg.Server.Host, strconv.Itoa(cfg.Server.Port)),
