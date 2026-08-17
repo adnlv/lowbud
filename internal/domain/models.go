@@ -22,3 +22,7 @@ type LedgerTransaction struct {
 	Amount               uint64
 	CreatedAt            time.Time
 }
+
+type AccessTokenClaims struct {
+	AccountID string `json:"account_id"`
+}

@@ -16,7 +16,18 @@ var ErrMismatchedHashAndPassword = errors.New("hashedPassword is not the hash of
 type PasswordHasher interface {
 	HashPassword(password string) (string, error)
 
-	// CompareHashAndPassword compares a hashed password with its possible plaintext equivalent.
-	// Returns nil on success, or ErrMismatchedHashAndPassword on failure.
+	// CompareHashAndPassword compares a hashed password with its possible plaintext
+	// equivalent. Returns nil on success, or ErrMismatchedHashAndPassword on
+	// failure.
 	CompareHashAndPassword(hashedPassword, password string) error
+}
+
+var ErrTokenExpired = errors.New("token expired")
+
+type AccessTokenProvider interface {
+	NewAccessToken(claims *AccessTokenClaims) (string, error)
+
+	// ParseAccessToken parses, validates, verifies the signature, and returns the
+	// parsed token claims. Returns domain.ErrTokenExpired if the token is expired.
+	ParseAccessToken(tokenStr string) (*AccessTokenClaims, error)
 }
