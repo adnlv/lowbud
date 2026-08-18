@@ -38,7 +38,7 @@ func (h *LedgerHandler) CreateTransaction(w http.ResponseWriter, r *http.Request
 	}
 
 	if !req.Amount.IsPositive() {
-		writeError(w, http.StatusBadRequest, "negative and zero transfers are rejected")
+		writeError(w, http.StatusUnprocessableEntity, "negative and zero transfers are rejected")
 		return
 	}
 
