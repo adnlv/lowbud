@@ -42,6 +42,11 @@ func (h *LedgerHandler) CreateTransaction(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	if accessTokenClaims.AccountID == req.DestinationAccountID {
+		writeError(w, http.StatusUnprocessableEntity, "can't transfer funds to themself")
+		return
+	}
+
 	const totalBalanceQuery = `
 SELECT COALESCE(SUM(le.amount), 0) AS total_balance
 FROM accounts a LEFT JOIN ledger_entries le ON le.account_id = a.id
