@@ -21,17 +21,17 @@ func NewLedgerHandler(db *pgxpool.Pool, uuidProvider domain.UUIDProvider) *Ledge
 	}
 }
 
-type createLedgerTransactionRequest struct {
+type ledgerTransferRequest struct {
 	IdempotencyKey       string          `json:"idempotency_key" validate:"required"`
 	Description          string          `json:"description"`
 	DestinationAccountID string          `json:"destination_account_id" validate:"required,uuid"`
 	Amount               decimal.Decimal `json:"amount" validate:"required"`
 }
 
-func (h *LedgerHandler) CreateTransaction(w http.ResponseWriter, r *http.Request) {
+func (h *LedgerHandler) TransferFunds(w http.ResponseWriter, r *http.Request) {
 	accessTokenClaims := accessTokenClaimsFromContext(r.Context())
 
-	req := new(createLedgerTransactionRequest)
+	req := new(ledgerTransferRequest)
 	if err := decodeAndValidateJson(r.Body, req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
