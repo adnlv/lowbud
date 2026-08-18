@@ -37,6 +37,11 @@ func (h *LedgerHandler) CreateTransaction(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	if !req.Amount.IsPositive() {
+		writeError(w, http.StatusBadRequest, "negative and zero transfers are rejected")
+		return
+	}
+
 	const totalBalanceQuery = `
 SELECT COALESCE(SUM(le.amount), 0) AS total_balance
 FROM accounts a LEFT JOIN ledger_entries le ON le.account_id = a.id
