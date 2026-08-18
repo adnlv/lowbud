@@ -47,14 +47,36 @@ func (h *LedgerHandler) CreateTransaction(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	const totalBalanceQuery = `
-SELECT COALESCE(SUM(le.amount), 0) AS total_balance
-FROM accounts a LEFT JOIN ledger_entries le ON le.account_id = a.id
-WHERE a.id = $1 AND a.closed_at IS NULL
-GROUP BY a.id
+	tx, err := h.DB.Begin(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer func() { _ = tx.Rollback(r.Context()) }()
+
+	const lockSenderQuery = `
+SELECT id FROM accounts WHERE id = $1 AND closed_at IS NULL FOR UPDATE
 `
-	balance := decimal.Zero
-	if err := h.DB.QueryRow(r.Context(), totalBalanceQuery, accessTokenClaims.AccountID).Scan(&balance); err != nil {
+	var senderId string
+	if err = tx.QueryRow(r.Context(), lockSenderQuery, accessTokenClaims.AccountID).Scan(&senderId); err != nil {
+		writeError(w, http.StatusNotFound, "sender account not found or closed")
+		return
+	}
+
+	const checkDestinationQuery = `
+SELECT id FROM accounts WHERE id = $1 AND closed_at IS NULL
+`
+	var destinationId string
+	if err = tx.QueryRow(r.Context(), checkDestinationQuery, req.DestinationAccountID).Scan(&destinationId); err != nil {
+		writeError(w, http.StatusBadRequest, "destination account not found or closed")
+		return
+	}
+
+	const totalBalanceQuery = `
+SELECT COALESCE(SUM(amount), 0) FROM ledger_entries WHERE account_id = $1
+`
+	var balance decimal.Decimal
+	if err = tx.QueryRow(r.Context(), totalBalanceQuery, accessTokenClaims.AccountID).Scan(&balance); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -63,13 +85,6 @@ GROUP BY a.id
 		writeError(w, http.StatusPaymentRequired, "not enough money")
 		return
 	}
-
-	tx, err := h.DB.Begin(r.Context())
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	defer func() { _ = tx.Rollback(r.Context()) }()
 
 	transactionId, err := h.UUIDProvider.NewUUID()
 	if err != nil {
