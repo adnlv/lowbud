@@ -44,6 +44,58 @@ GROUP BY a.id;
 	writeJson(w, http.StatusOK, &balanceResponse{Amount: balance})
 }
 
+type getTransactionResponse struct {
+	ID          string          `json:"id"`
+	Description string          `json:"description"`
+	CreatedAt   time.Time       `json:"created_at"`
+	Amount      decimal.Decimal `json:"amount"`
+}
+
+func (h *LedgerHandler) GetTransaction(w http.ResponseWriter, r *http.Request) {
+	accessTokenClaims := accessTokenClaimsFromContext(r.Context())
+
+	transactionId := r.PathValue("transactionId")
+	if err := h.UUIDProvider.ValidateUUID(transactionId); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	const getTransactionQuery = `
+SELECT 
+    t.id,
+    t.description,
+    t.created_at,
+    e.amount
+FROM ledger_transactions t
+JOIN ledger_entries e ON e.ledger_transaction_id = t.id
+WHERE t.id = $1 AND e.account_id = $2;
+`
+	var transaction domain.LedgerTransaction
+	var entry domain.LedgerEntry
+
+	if err := h.DB.QueryRow(
+		r.Context(),
+		getTransactionQuery,
+		transactionId,
+		accessTokenClaims.AccountID,
+	).Scan(
+		&transaction.ID,
+		&transaction.Description,
+		&transaction.CreatedAt,
+		&entry.Amount,
+	); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJson(w, http.StatusOK, &getTransactionResponse{
+		ID:          transaction.ID,
+		Description: transaction.Description,
+		CreatedAt:   transaction.CreatedAt,
+		Amount:      entry.Amount,
+	})
+}
+
 type ledgerTransferRequest struct {
 	IdempotencyKey       string          `json:"idempotency_key" validate:"required"`
 	Description          string          `json:"description"`

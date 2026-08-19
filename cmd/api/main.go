@@ -84,6 +84,7 @@ func mustListenAndServe(cfg *config.Config, db *pgxpool.Pool) {
 
 	ledgerHandler := delivery.NewLedgerHandler(db, uuidProvider)
 	mux.HandleFunc("GET /api/v1/ledger/balance", authHandler.DemandAccessTokenMiddleware(ledgerHandler.GetBalance))
+	mux.HandleFunc("GET /api/v1/ledger/history/{transactionId}", authHandler.DemandAccessTokenMiddleware(ledgerHandler.GetTransaction))
 	mux.HandleFunc("POST /api/v1/ledger/transfer", authHandler.DemandAccessTokenMiddleware(ledgerHandler.TransferFunds))
 
 	server := &http.Server{
