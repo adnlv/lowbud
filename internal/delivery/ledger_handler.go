@@ -21,6 +21,25 @@ func NewLedgerHandler(db *pgxpool.Pool, uuidProvider domain.UUIDProvider) *Ledge
 	}
 }
 
+type balanceResponse struct {
+	Amount decimal.Decimal `json:"amount"`
+}
+
+func (h *LedgerHandler) Balance(w http.ResponseWriter, r *http.Request) {
+	accessTokenClaims := accessTokenClaimsFromContext(r.Context())
+
+	const totalBalanceQuery = `
+SELECT COALESCE(SUM(amount), 0) FROM ledger_entries WHERE account_id = $1
+`
+	var balance decimal.Decimal
+	if err := h.DB.QueryRow(r.Context(), totalBalanceQuery, accessTokenClaims.AccountID).Scan(&balance); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJson(w, http.StatusOK, &balanceResponse{Amount: balance})
+}
+
 type ledgerTransferRequest struct {
 	IdempotencyKey       string          `json:"idempotency_key" validate:"required"`
 	Description          string          `json:"description"`
