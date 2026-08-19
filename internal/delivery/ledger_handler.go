@@ -28,20 +28,15 @@ type balanceResponse struct {
 func (h *LedgerHandler) GetBalance(w http.ResponseWriter, r *http.Request) {
 	accessTokenClaims := accessTokenClaimsFromContext(r.Context())
 
-	const checkAccountQuery = `
-SELECT id FROM accounts WHERE id = $1 AND closed_at IS NULL
-`
-	var senderId string
-	if err := h.DB.QueryRow(r.Context(), checkAccountQuery, accessTokenClaims.AccountID).Scan(&senderId); err != nil {
-		writeError(w, http.StatusNotFound, "account not found or closed")
-		return
-	}
-
-	const totalBalanceQuery = `
-SELECT COALESCE(SUM(amount), 0) FROM ledger_entries WHERE account_id = $1
+	const getBalanceQuery = `
+SELECT COALESCE(SUM(l.amount), 0)
+FROM accounts a
+LEFT JOIN ledger_entries l ON l.account_id = a.id
+WHERE a.id = $1 AND a.closed_at IS NULL
+GROUP BY a.id;
 `
 	var balance decimal.Decimal
-	if err := h.DB.QueryRow(r.Context(), totalBalanceQuery, accessTokenClaims.AccountID).Scan(&balance); err != nil {
+	if err := h.DB.QueryRow(r.Context(), getBalanceQuery, accessTokenClaims.AccountID).Scan(&balance); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

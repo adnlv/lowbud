@@ -83,7 +83,7 @@ func mustListenAndServe(cfg *config.Config, db *pgxpool.Pool) {
 	mux.HandleFunc("DELETE /api/v1/account", authHandler.DemandAccessTokenMiddleware(accountHandler.CloseAccount))
 
 	ledgerHandler := delivery.NewLedgerHandler(db, uuidProvider)
-	mux.HandleFunc("GET /api/v1/ledger/balance", authHandler.DemandAccessTokenMiddleware(ledgerHandler.Balance))
+	mux.HandleFunc("GET /api/v1/ledger/balance", authHandler.DemandAccessTokenMiddleware(ledgerHandler.GetBalance))
 	mux.HandleFunc("POST /api/v1/ledger/transfer", authHandler.DemandAccessTokenMiddleware(ledgerHandler.TransferFunds))
 
 	server := &http.Server{
