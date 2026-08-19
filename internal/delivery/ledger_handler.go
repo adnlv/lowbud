@@ -25,7 +25,7 @@ type balanceResponse struct {
 	Amount decimal.Decimal `json:"amount"`
 }
 
-func (h *LedgerHandler) Balance(w http.ResponseWriter, r *http.Request) {
+func (h *LedgerHandler) GetBalance(w http.ResponseWriter, r *http.Request) {
 	accessTokenClaims := accessTokenClaimsFromContext(r.Context())
 
 	const checkAccountQuery = `
