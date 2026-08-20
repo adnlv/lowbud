@@ -2,9 +2,11 @@ package delivery
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/adnlv/lowbud/internal/domain"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/shopspring/decimal"
 )
@@ -42,6 +44,69 @@ GROUP BY a.id;
 	}
 
 	writeJson(w, http.StatusOK, &balanceResponse{Amount: balance})
+}
+
+type transactionHistoryItem struct {
+	ID          string          `db:"id" json:"id"`
+	Description string          `db:"description" json:"description"`
+	CreatedAt   time.Time       `db:"created_at" json:"created_at"`
+	Amount      decimal.Decimal `db:"amount" json:"amount"`
+}
+
+func (h *LedgerHandler) GetTransactionHistory(w http.ResponseWriter, r *http.Request) {
+	accessTokenClaims := accessTokenClaimsFromContext(r.Context())
+
+	queryValues := r.URL.Query()
+
+	var page uint64 = 1
+	const pageKey = "page"
+	if queryValues.Has(pageKey) {
+		parseUint, err := strconv.ParseUint(queryValues.Get(pageKey), 10, 64)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		page = parseUint
+	}
+
+	var limit uint64 = 100
+	const limitKey = "limit"
+	if queryValues.Has(limitKey) {
+		parseUint, err := strconv.ParseUint(queryValues.Get(limitKey), 10, 64)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		limit = parseUint
+	}
+
+	const transactionHistoryQuery = `
+SELECT 
+    t.id,
+    t.description,
+    t.created_at,
+    e.amount
+FROM ledger_entries e
+JOIN ledger_transactions t ON t.id = e.ledger_transaction_id
+WHERE e.account_id = $1
+ORDER BY e.created_at DESC
+LIMIT $2
+OFFSET $3
+`
+
+	offset := (page - 1) * limit
+	rows, err := h.DB.Query(r.Context(), transactionHistoryQuery, accessTokenClaims.AccountID, limit, offset)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	items, err := pgx.CollectRows(rows, pgx.RowToStructByName[transactionHistoryItem])
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJson(w, http.StatusOK, items)
 }
 
 type getTransactionResponse struct {
