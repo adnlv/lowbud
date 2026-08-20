@@ -68,6 +68,10 @@ func (h *LedgerHandler) GetTransactionHistory(w http.ResponseWriter, r *http.Req
 		}
 		page = parseUint
 	}
+	if page == 0 {
+		writeError(w, http.StatusBadRequest, "page must be a positive number")
+		return
+	}
 
 	var limit uint64 = 100
 	const limitKey = "limit"
@@ -78,6 +82,10 @@ func (h *LedgerHandler) GetTransactionHistory(w http.ResponseWriter, r *http.Req
 			return
 		}
 		limit = parseUint
+	}
+	if limit > 100 {
+		writeError(w, http.StatusBadRequest, "limit is too high")
+		return
 	}
 
 	const transactionHistoryQuery = `
