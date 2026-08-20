@@ -73,18 +73,18 @@ func (h *LedgerHandler) GetTransactionHistory(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	var limit uint64 = 100
-	const limitKey = "limit"
-	if queryValues.Has(limitKey) {
-		parseUint, err := strconv.ParseUint(queryValues.Get(limitKey), 10, 64)
+	var perPage uint64 = 100
+	const perPageKey = "per_page"
+	if queryValues.Has(perPageKey) {
+		parseUint, err := strconv.ParseUint(queryValues.Get(perPageKey), 10, 64)
 		if err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		limit = parseUint
+		perPage = parseUint
 	}
-	if limit > 100 {
-		writeError(w, http.StatusBadRequest, "limit is too high")
+	if perPage > 100 {
+		writeError(w, http.StatusBadRequest, "per_page is too high")
 		return
 	}
 
@@ -101,9 +101,8 @@ ORDER BY e.created_at DESC
 LIMIT $2
 OFFSET $3
 `
-
-	offset := (page - 1) * limit
-	rows, err := h.DB.Query(r.Context(), transactionHistoryQuery, accessTokenClaims.AccountID, limit, offset)
+	offset := (page - 1) * perPage
+	rows, err := h.DB.Query(r.Context(), transactionHistoryQuery, accessTokenClaims.AccountID, perPage, offset)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
