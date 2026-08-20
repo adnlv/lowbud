@@ -23,7 +23,7 @@ func NewLedgerHandler(db *pgxpool.Pool, uuidProvider domain.UUIDProvider) *Ledge
 	}
 }
 
-type balanceResponse struct {
+type getBalanceResponse struct {
 	Amount decimal.Decimal `json:"amount"`
 }
 
@@ -43,7 +43,7 @@ GROUP BY a.id;
 		return
 	}
 
-	writeJson(w, http.StatusOK, &balanceResponse{Amount: balance})
+	writeJson(w, http.StatusOK, &getBalanceResponse{Amount: balance})
 }
 
 type transactionHistoryItem struct {
