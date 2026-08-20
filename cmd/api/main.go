@@ -73,6 +73,7 @@ func mustListenAndServe(cfg *config.Config, db *pgxpool.Pool) {
 
 	authService := domain.NewAuthService(db, uuidProvider, passwordHasher, accessTokenProvider)
 	accountService := domain.NewAccountService(db)
+	ledgerService := domain.NewLedgerService(db, uuidProvider)
 
 	authHandler := delivery.NewAuthHandler(authService)
 	mux.HandleFunc("POST /api/v1/auth/register", authHandler.RegisterAccount)
@@ -82,7 +83,7 @@ func mustListenAndServe(cfg *config.Config, db *pgxpool.Pool) {
 	mux.HandleFunc("GET /api/v1/account", authHandler.DemandAccessTokenMiddleware(accountHandler.GetAccountInfo))
 	mux.HandleFunc("DELETE /api/v1/account", authHandler.DemandAccessTokenMiddleware(accountHandler.CloseAccount))
 
-	ledgerHandler := delivery.NewLedgerHandler(db, uuidProvider)
+	ledgerHandler := delivery.NewLedgerHandler(ledgerService)
 	mux.HandleFunc("GET /api/v1/ledger/balance", authHandler.DemandAccessTokenMiddleware(ledgerHandler.GetBalance))
 	mux.HandleFunc("GET /api/v1/ledger/history", authHandler.DemandAccessTokenMiddleware(ledgerHandler.GetTransactionHistory))
 	mux.HandleFunc("GET /api/v1/ledger/history/{transactionId}", authHandler.DemandAccessTokenMiddleware(ledgerHandler.GetTransaction))
